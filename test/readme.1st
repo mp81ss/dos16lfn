@@ -1,0 +1,7 @@
+Test files require (of course) the DOS16LFN library to be compiled.
+Tests rely on yaCut test framework (just a header file), download it at:
+https://github.com/mp81ss/yaCut
+
+The assembler test doesn't need yaCut.
+
+P.S.: remember to select large model

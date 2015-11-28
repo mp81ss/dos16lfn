@@ -1,0 +1,170 @@
+                   MS-DOS 16-bit Long File Names (DOS16LFN).
+             LFN library, enable LFN on 16 bit clients, version 1.0
+            Copyright (C) 2003-2015 - Michele Pes (mp81ss@rambler.ru)
+
+
+=> LEGAL <=
+~~~~~~~~~~~
+
+Software included in this package is free and open source, BSD license.
+Please see details in file LICENSE
+
+
+=> DESCRIPTION <=
+~~~~~~~~~~~~~~~~~
+
+The software is a MS-DOS library that gives access to Long File Names APIs if
+a working LFN driver is available. The library is just a .LIB file to add to
+the linker. A single header file must be included by the compiler, one for
+C/C++ and another for Assembly (see examples).
+
+
+=> REQUIREMENTS <=
+~~~~~~~~~~~~~~~~~~
+
+Any MS-DOS environment with a LFN driver installed is the only requirement.
+Win32 shell is suitable too. Note that if a LFN driver is not available, the
+library just fall back to corresponding short calls, so there are no drawbacks
+in relying on the library APIs.
+
+
+=> INSTALLATION <=
+~~~~~~~~~~~~~~~~~~
+
+When compiling (C/C++) just add the dos16lfn.h header.
+Assembly programmers must use the dos16lfn.inc header.
+The library file dos16lfn.lib must be added when linking.
+
+
+=> NOTES <=
+~~~~~~~~~~~
+
+The library source is 100% MASM-compatible hand-coded assembler.
+The library supports the LARGE memory model.
+The main policy is to return 0 if all ok, or an error code (typically errno,
+but this is not guaranteed), see the "API REFERENCE" section below for details
+and exceptions. All functions getting pointers validate them (NULL pointers
+are checked). If buffers length is too short, an error code is returned.
+The library default behaviour is to try LFN APIs (if supported AND enabled),
+otherwise call short-mode API call.
+The library can be detected with preprocessor macro "DOS16LFN" (w/o quotes).
+
+
+=> API REFERENCE <=
+~~~~~~~~~~~~~~~~~~~
+
+-----------------------------------------------
+void get_version16l( int* pMajor, int* pMinor );
+Put the major version in the int pointed by pMajor if pMajor is not NULL.
+Put the minor version in the int pointed by pMinor if pMinor is not NULL.
+Note: Library version major/minor numbers are also stored in DOS16LFN_MAJOR
+and DOS16LFN_MINOR macros in the library header but should be used by
+preprocessor only. Prefer calling the get_version16l function in client code.
+
+----------------------------
+int is_supported16l( void );
+Return 0 if not supported by OS, non-zero otherwise.
+
+--------------------------
+int get_status16l( void );
+Return 0 if disabled by a call to set_status16l(0), non-zero otherwise.
+
+---------------------------------
+void set_status16l( int status );
+If status is 0, LFN are disabled and short-mode API will be performed.
+Non-zero values enable LFN, with fallback to short-mode if LFN are not
+available (default behaviour).
+
+-------------------------------
+int get_last_status16l( void );
+Return 0 if last library call performed a short-mode API call. Non-zero if last
+call performed a LFN call.
+NOTE: get_short16l() and get_long16l() do not update this information.
+
+----------------------------------------------------------
+int get_attrib16l( const char* filename, int* p_attribs );
+Get attributes of file filename and store them in p_attribs.
+If filename and/or p_attribs are NULL, 9 is returned.
+The p_attribs parameter will contain one or a combination of these macros:
+NONE_16L, READ_ONLY_16L, HIDDEN_16L, SYSTEM_16L, FOLDER_16L, ARCHIVE_16L.
+If all ok, 0 is returned, otherwise OS error code is returned.
+Note: The macro IS_DIR16L that take an int parameter (attributes) is provided.
+
+-------------------------------------------------------
+int set_attrib16l( const char* filename, int attribs );
+Set attributes attribs to file filename.
+If filename is NULL, 9 is returned.
+The attribs parameter must be one or a combination of the macros
+listed in headers (see get_attrib16l).
+If all ok, 0 is returned, otherwise OS error code is returned.
+
+----------------------------------------------
+int open16l( const char* filename, int mode );
+Open filename with mode mode.
+Return OS handle (>= 0) if all ok, otherwise an error code is returned.
+Since the return value is a valid handle, errors are returned negative.
+If filename is NULL, -9 is returned.
+If mode is invalid, error code -0x57 (-87, Invalid Parameter) is returned.
+The mode parameter must be one of these (included in library header):
+READ_ONLY_16L: Open in read only mode, fails if file doesn't exist.
+WRITE_ONLY_16L: Open in write only mode, fails if file doesn't exist.
+                Do not create or truncate, preserve any pre-existing data.
+READ_WRITE_16L: Open in read/write mode, fails if file doesn't exist.
+                Do not create or truncate, preserve any existing data.
+CREATE_TRUNCATE_16L: Create a new file, truncate if already exists.
+                     If ok, file is opened in read/write mode.
+Note: Created files have no attributes set.
+
+------------------------------------------------------------
+int rename16l( const char* old_name, const char* new_name );
+Rename file stored in old_name to new name stored in new_name.
+Return 0 if all ok, 9 if some parameter is NULL or OS returned error code.
+
+---------------------------------------
+int unlink16l( const char* file_name );
+Remove the file stored in file_name.
+Return 0 if ok, 9 if file_name is NULL or OS returned error code.
+
+-------------------------------------------------------------------
+int get_cwd16l( int drive, char* buffer, unsigned int buffer_len );
+Get current directory for drive into buffer.
+If drive is 0, default drive is assumed, else 1 = A, 2 = B and so on.
+The buffer parameter will contain the current directory including the drive.
+If buffer is NULL, 9 is returned.
+The buffer_len parameter is interpreted as the number of bytes of buffer that
+can be written. If the current directory size plus 1 ('\0') is greater than
+buffer_len, error code 0x18 is returned. If all ok, 0 is returned or an OS
+returned error code.
+
+-------------------------------------
+int mkdir16l( const char* dir_name );
+Create the directory named dir_name.
+Return 0 if ok, 9 if dir_name is NULL or OS returned error code.
+
+------------------------------------
+int chdir16l( const char* new_dir );
+Change the current directory to new_dir.
+Return 0 if ok, 9 if new_dir is NULL or OS returned error code.
+
+-------------------------------------
+int rmdir16l( const char* dir_name );
+Remove the directory named dir_name.
+Return 0 if ok, 9 if dir_name is NULL or OS returned error code.
+
+--------------------------------------------------------------------------------
+int get_short16l( char* short_buf, unsigned int len, const char* long_name );
+Put the short form of long_name into short_buf.
+If short_buf and/or long name is NULL, 9 is returned.
+The len parameter is interpreted as the number of bytes of short_buf that
+can be written. If the short form size plus 1 ('\0') is greater than len,
+error 0x18 is returned. If all ok, 0 is returned or OS returned error code.
+Note: this call doesn't update the information returned by get_last_status16l.
+
+-------------------------------------------------------------------------------
+int get_long16l( char* long_buf, unsigned int len, const char* short_name );
+Put the long form of short_name into long_buf.
+If long_buf and/or short_name is NULL, 9 is returned.
+The len parameter is interpreted as the number of bytes of long_buf that can
+be written. If the long form size plus 1 ('\0') is greater than len, error
+code 0x18 is returned. If all ok, 0 is returned or OS returned error code.
+Note: this call do not update the information returned by get_last_status16l.

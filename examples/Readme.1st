@@ -1,0 +1,3 @@
+Examples require (of course) the DOS16LFN library to be compiled.
+Just compile/assemble the examples adding the include directory and the
+dos16lfn library to linker.

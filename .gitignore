@@ -1,0 +1,10 @@
+*.o
+*.obj
+*.exe
+*.com
+*.sys
+*.lib
+*.dll
+*.map
+*.err
+*.tds
